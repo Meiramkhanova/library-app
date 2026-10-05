@@ -1,4 +1,3 @@
-// Interfaces: every library item can describe itself and can be borrowed
 interface Describable {
     fun describe(): String
 }
@@ -8,7 +7,6 @@ interface Borrowable {
     fun lateFee(daysLate: Int): Double
 }
 
-// Abstract base class (inheritance) that implements both interfaces
 abstract class LibraryItem(
     val id: Int,
     val title: String,
@@ -61,12 +59,10 @@ class Dvd(
     override fun describe(): String = super.describe() + ", $durationMinutes min"
 }
 
-// Data classes
 data class Member(val id: Int, val name: String, val email: String)
 
 data class Loan(val item: LibraryItem, val member: Member)
 
-// Sealed class: every library operation returns one of these results
 sealed class LibraryResult {
     data class Success(val message: String) : LibraryResult()
     data class Error(val reason: String) : LibraryResult()

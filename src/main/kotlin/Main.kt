@@ -59,7 +59,6 @@ fun printMenu() {
     print("Choose an option: ")
 }
 
-// Higher-order function with a default lambda parameter
 fun printItems(
     header: String,
     items: List<LibraryItem>,
@@ -125,8 +124,6 @@ fun showStatistics(library: Library) {
     }
 }
 
-// Coroutines: runBlocking starts a coroutine scope, async runs the suspend function,
-// launch shows a loading animation at the same time
 fun loadNewArrivals(library: Library) = runBlocking {
     println("Connecting to the publisher server...")
 

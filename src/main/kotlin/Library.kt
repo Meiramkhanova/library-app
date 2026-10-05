@@ -19,7 +19,6 @@ class Library(val name: String) {
 
     fun allMembers(): List<Member> = members.values.toList()
 
-    // Higher-order function: takes a lambda that decides which items to keep
     fun findItems(predicate: (LibraryItem) -> Boolean): List<LibraryItem> = items.filter(predicate)
 
     fun borrow(itemId: Int, memberId: Int): LibraryResult {
@@ -49,7 +48,6 @@ class Library(val name: String) {
             return LibraryResult.Success("\"${loan.item.title}\" returned on time")
         }
 
-        // Polymorphism: each item type calculates its own late fee
         val fee = loan.item.lateFee(daysLate)
         fines[loan.member.id] = (fines[loan.member.id] ?: 0.0) + fee
         return LibraryResult.Success(
@@ -59,10 +57,8 @@ class Library(val name: String) {
 
     fun activeLoans(): List<Loan> = loans.values.toList()
 
-    // Set: unique authors (duplicates are removed automatically)
     fun authors(): Set<String> = items.filterIsInstance<Book>().map { it.author }.toSet()
 
-    // reduce: sum of pages of all books
     fun totalPages(): Int {
         val books = items.filterIsInstance<Book>()
         if (books.isEmpty()) return 0
@@ -74,7 +70,6 @@ class Library(val name: String) {
     fun finesByMember(): Map<String, Double> =
         fines.mapKeys { (memberId, _) -> members[memberId]?.name ?: "Unknown" }
 
-    // Suspend function: simulates downloading new items from a remote server
     suspend fun fetchNewArrivals(): List<LibraryItem> {
         delay(1500)
         val firstId = (items.maxOfOrNull { it.id } ?: 0) + 1
