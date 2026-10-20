@@ -1,11 +1,13 @@
+package com.adina.libraryapp.model
+
 import kotlinx.coroutines.delay
 
 class Library(val name: String) {
 
-    private val items = mutableListOf<LibraryItem>()      // List
-    private val members = mutableMapOf<Int, Member>()      // Map: memberId -> Member
-    private val loans = mutableMapOf<Int, Loan>()          // Map: itemId -> Loan
-    private val fines = mutableMapOf<Int, Double>()        // Map: memberId -> total fines
+    private val items = mutableListOf<LibraryItem>()
+    private val members = mutableMapOf<Int, Member>()
+    private val loans = mutableMapOf<Int, Loan>()
+    private val fines = mutableMapOf<Int, Double>()
 
     fun addItem(item: LibraryItem) {
         items.add(item)

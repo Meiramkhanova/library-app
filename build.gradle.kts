@@ -1,23 +1,5 @@
 plugins {
-    kotlin("jvm") version "2.0.21"
-    application
-}
-
-group = "org.example"
-version = "1.0"
-
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
-}
-
-application {
-    mainClass.set("MainKt")
-}
-
-tasks.named<JavaExec>("run") {
-    standardInput = System.`in`
+    id("com.android.application") version "9.4.0" apply false
+    id("org.jetbrains.kotlin.android") version "2.4.21" apply false
+    id("org.jetbrains.kotlin.plugin.compose") version "2.4.21" apply false
 }

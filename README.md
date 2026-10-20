@@ -1,38 +1,106 @@
-# LibraryApp
+# LibraryApp — City Library (Android)
 
-A small Kotlin/JVM console application for managing a library. Users can browse books, magazines and DVDs, search by title, borrow and return items (late returns are charged a fee), view statistics, and load new arrivals from a simulated server using coroutines.
+An Android application for managing a small library: books, magazines and DVDs.
+Users can browse the catalog, search and filter items, borrow and return them
+(late returns are charged a fee), add new items and load new arrivals from a
+simulated server.
+
+This project continues Homework 1: the console application's domain classes
+(`Library`, `Book`, `Magazine`, `Dvd`, `Member`, `Loan`) were reused as-is and
+put behind a Jetpack Compose UI and a `ViewModel`.
+
+## Features
+
+- **Catalog screen** — all items in a `LazyColumn` of Material 3 cards with
+  type icon, details and availability status.
+- **Search** by title, **filter** by type (`FilterChip`) and an
+  "Only available" `Checkbox`.
+- **Borrow** — pick a member in a dialog; the domain rules apply
+  (max 3 items per member, already-borrowed items are rejected).
+- **Return** — enter how many days the item was kept; late returns add a fine
+  (Book $0.50/day, Magazine $0.25/day, DVD $1.00/day).
+- **Add item** — dialog with type-specific fields (author/pages for books,
+  issue for magazines, duration for DVDs).
+- **New arrivals** — loads items with the suspend function
+  `Library.fetchNewArrivals()` (coroutine, simulated 1.5 s server delay).
+- **Loans screen** — active loans, statistics and fines per member.
+- Results of every operation are shown in a Snackbar.
+
+## Tech stack
+
+- Kotlin, Jetpack Compose, Material 3
+- `ViewModel` + `StateFlow` (UI state is an immutable snapshot)
+- kotlinx.coroutines (`viewModelScope`, suspend functions)
+- Gradle 9.6, Android Gradle Plugin 9.4, compileSdk 37, minSdk 26
 
 ## How to run
 
-Requirements: JDK 17 or newer.
+Requirements: Android Studio (latest), JDK 17, Android SDK 37.
 
-**From IntelliJ IDEA / Android Studio:** open the project folder, wait for Gradle sync, open `src/main/kotlin/Main.kt` and click the green Run arrow next to `fun main()`.
+1. Clone this repository and open the project folder in Android Studio
+   (`File → Open`).
+2. Wait for **Gradle Sync** to finish (dependencies are downloaded on first run).
+3. Create an emulator (`Tools → Device Manager → Create Virtual Device`,
+   e.g. Pixel with API 36/37) or connect a physical Android device with
+   USB debugging enabled.
+4. Select the `app` run configuration and press **Run ▶**.
 
-**From the terminal:**
+From the terminal (with the Android SDK installed):
 
 ```bash
 # Windows
-gradlew.bat run --console=plain
-
-# macOS / Linux
-./gradlew run --console=plain
+gradlew.bat assembleDebug        # builds app/build/outputs/apk/debug/app-debug.apk
+gradlew.bat installDebug         # installs on a running emulator / device
 ```
 
-Then choose menu options by typing a number and pressing Enter.
+Note: the build runs the Gradle daemon on JDK 17 (`org.gradle.java.home` in
+`gradle.properties`). If you do not have JDK 17, remove that line and set
+JDK 17 in `Settings → Build, Execution, Deployment → Build Tools → Gradle`.
 
-## Where the requirements are demonstrated
+## How state works (rotation experiment)
 
-| Requirement | Where |
-|---|---|
-| Variables, data types, conditions, loops | `Main.kt`: `var running` + `while` menu loop, `when`, `for` in `printItems`; `Int`, `Double`, `String`, `Boolean` across the project; `if` checks in `Library.borrow()` / `returnItem()` |
-| List, Set, Map | `Library.kt`: `items` (List), `members` / `loans` / `fines` (Map), `authors()` returns a Set |
-| map, filter, reduce | `Library.totalPages()` (`map` + `reduce`), `Library.findItems()` (`filter`), `showStatistics()` in `Main.kt` (`map`, `count`, `groupBy`) |
-| Functions, higher-order functions, lambdas | `Library.findItems(predicate: (LibraryItem) -> Boolean)`, `printItems(..., formatter: (LibraryItem) -> String)`; lambdas like `{ it.isAvailable }` in `Main.kt` |
-| Classes and objects | `Library`, `Book`, `Magazine`, `Dvd`; objects created in `createLibrary()`; `companion object` in `Library` |
-| Inheritance | `Models.kt`: abstract `LibraryItem` is extended by `Book`, `Magazine`, `Dvd` |
-| Interfaces and polymorphism | `Describable` and `Borrowable` interfaces; each item overrides `describe()` and `lateFee()`, and `Library.returnItem()` calls `lateFee()` without knowing the concrete type |
-| Data class | `Member`, `Loan` in `Models.kt` |
-| Sealed class | `LibraryResult` (`Success`, `Error`, `NotFound`), handled with an exhaustive `when` in `printResult()` |
-| Suspend function and coroutine | `Library.fetchNewArrivals()` is `suspend` (uses `delay`); `loadNewArrivals()` in `Main.kt` uses `runBlocking`, `async` and `launch` |
+The app demonstrates three kinds of state. Rotate the device
+(or enable "Don't keep activities") to see the difference:
 
-Coroutines dependency (`kotlinx-coroutines-core`) is added in `build.gradle.kts`.
+| Mechanism | Used for | Survives rotation? | Why |
+|---|---|---|---|
+| `remember` | expanded card ("Details") | No | Stored in the composition; the Activity and its composition are destroyed on recreation |
+| `rememberSaveable` | search text, type filter, "Only available" checkbox, selected tab, "Days kept" fields | Yes | Written into the saved-state `Bundle` and restored after recreation |
+| `ViewModel` | catalog, members, loans, fines, added items | Yes | The `ViewModel` is retained across Activity recreation and only cleared when the screen is finished for good |
+
+Rule of thumb: `remember` — cheap transient UI state; `rememberSaveable` —
+small user input that should also survive process death (anything that fits
+in a `Bundle`); `ViewModel` — screen data and application logic that must not
+be lost and does not belong in a `Bundle`.
+
+## Project structure
+
+```
+app/src/main/java/com/adina/libraryapp/
+├── MainActivity.kt          # entry point, setContent
+├── LibraryViewModel.kt      # LibraryUiState + all user actions
+├── model/
+│   ├── Library.kt           # domain logic from HW1 (borrow/return/fines)
+│   └── Models.kt            # Book, Magazine, Dvd, Member, Loan, LibraryResult
+└── ui/
+    ├── LibraryApp.kt        # Scaffold, bottom navigation, Snackbar
+    ├── CatalogScreen.kt     # search, filter, catalog list, dialogs
+    ├── LoansScreen.kt       # statistics, fines, returns
+    ├── theme/Theme.kt       # Material 3 color scheme
+    └── components/          # reusable composables:
+        ├── LibraryItemCard.kt   # item card with status chip
+        ├── FilterBar.kt         # search field + chips + checkbox
+        ├── LoanCard.kt          # loan card with return form
+        ├── MemberPicker.kt      # member radio list
+        └── Dialogs.kt           # Borrow and Add-item dialogs
+```
+
+## Screenshots
+
+Catalog with search and filter:
+
+![Catalog](screenshots/catalog.png)
+
+Borrow flow and loans with fines:
+
+![Loans](screenshots/loans.png)

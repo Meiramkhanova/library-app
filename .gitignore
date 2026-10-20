@@ -5,3 +5,7 @@ build/
 *.iml
 out/
 local.properties
+*.apk
+captures/
+.cxx/
+.externalNativeBuild/

@@ -1,3 +1,5 @@
+package com.adina.libraryapp.model
+
 interface Describable {
     fun describe(): String
 }
