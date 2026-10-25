@@ -15,11 +15,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-/**
- * Immutable snapshot of everything the UI needs.
- * [Library] mutates its own lists, so after every operation the ViewModel
- * re-reads the domain state and publishes a fresh snapshot through [StateFlow].
- */
 data class LibraryUiState(
     val items: List<LibraryItem> = emptyList(),
     val members: List<Member> = emptyList(),
@@ -29,11 +24,6 @@ data class LibraryUiState(
     val message: String? = null
 )
 
-/**
- * Owns the [Library] instance and all application logic.
- * Survives Activity recreation (e.g. rotation); the UI only renders [uiState]
- * and forwards user actions to the functions below.
- */
 class LibraryViewModel : ViewModel() {
 
     private val library = Library("City Library")

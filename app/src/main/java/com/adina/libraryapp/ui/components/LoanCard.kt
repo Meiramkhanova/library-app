@@ -30,7 +30,6 @@ fun LoanCard(
     onReturn: (daysKept: Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // rememberSaveable keyed by item id: typed days survive rotation per loan
     var daysText by rememberSaveable(loan.item.id) { mutableStateOf("") }
 
     Card(modifier = modifier.fillMaxWidth()) {

@@ -35,10 +35,6 @@ import com.adina.libraryapp.ui.components.BorrowDialog
 import com.adina.libraryapp.ui.components.FilterBar
 import com.adina.libraryapp.ui.components.LibraryItemCard
 
-/**
- * Catalog UI only. Filter/search state lives here (remember / rememberSaveable).
- * Domain actions are passed in as callbacks — state hoisting from ViewModel owner.
- */
 @Composable
 fun CatalogScreen(
     uiState: LibraryUiState,
@@ -56,12 +52,10 @@ fun CatalogScreen(
     onOpenItem: (itemId: Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // rememberSaveable: survives Activity recreation (rotation).
     var query by rememberSaveable { mutableStateOf("") }
     var selectedType by rememberSaveable { mutableStateOf("All") }
     var onlyAvailable by rememberSaveable { mutableStateOf(false) }
 
-    // remember only: intentionally lost on rotation — compare with search field.
     var expandedItemId by remember { mutableStateOf<Int?>(null) }
 
     var borrowTarget by remember { mutableStateOf<LibraryItem?>(null) }

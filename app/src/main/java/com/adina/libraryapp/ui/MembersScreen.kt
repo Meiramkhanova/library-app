@@ -34,7 +34,6 @@ fun MembersScreen(
     onAddMember: (name: String, email: String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Dialog visibility is local UI state — remember is enough (lost on rotation is fine).
     var showAddDialog by remember { mutableStateOf(false) }
 
     Column(modifier = modifier.padding(16.dp)) {

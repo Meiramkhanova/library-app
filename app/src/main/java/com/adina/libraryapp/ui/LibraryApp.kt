@@ -35,8 +35,6 @@ fun LibraryApp(viewModel: LibraryViewModel) {
     val navController = rememberNavController()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Lifecycle-aware collection: stops collecting when the UI is not STARTED
-    // (e.g. Activity paused). Survives rotation because the ViewModel does.
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
