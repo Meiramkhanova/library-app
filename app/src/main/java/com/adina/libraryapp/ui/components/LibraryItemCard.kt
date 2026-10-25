@@ -13,7 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Newspaper
 import androidx.compose.material3.Button
@@ -37,6 +37,7 @@ fun LibraryItemCard(
     item: LibraryItem,
     expanded: Boolean,
     onToggleExpanded: () -> Unit,
+    onOpen: () -> Unit,
     onBorrow: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -88,7 +89,10 @@ fun LibraryItemCard(
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 TextButton(onClick = onToggleExpanded) {
-                    Text(if (expanded) "Hide details" else "Details")
+                    Text(if (expanded) "Hide" else "Preview")
+                }
+                TextButton(onClick = onOpen) {
+                    Text("Open")
                 }
                 Spacer(modifier = Modifier.weight(1f))
                 Button(onClick = onBorrow, enabled = item.isAvailable) {
@@ -126,10 +130,10 @@ private fun StatusChip(isAvailable: Boolean) {
 }
 
 private fun iconFor(item: LibraryItem): ImageVector = when (item) {
-    is Book -> Icons.Filled.MenuBook
+    is Book -> Icons.AutoMirrored.Filled.MenuBook
     is Magazine -> Icons.Filled.Newspaper
     is Dvd -> Icons.Filled.Movie
-    else -> Icons.Filled.MenuBook
+    else -> Icons.AutoMirrored.Filled.MenuBook
 }
 
 private fun detailsFor(item: LibraryItem): String = when (item) {

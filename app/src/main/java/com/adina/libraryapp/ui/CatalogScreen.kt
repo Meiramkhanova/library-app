@@ -29,27 +29,39 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.adina.libraryapp.LibraryUiState
-import com.adina.libraryapp.LibraryViewModel
 import com.adina.libraryapp.model.LibraryItem
 import com.adina.libraryapp.ui.components.AddItemDialog
 import com.adina.libraryapp.ui.components.BorrowDialog
 import com.adina.libraryapp.ui.components.FilterBar
 import com.adina.libraryapp.ui.components.LibraryItemCard
 
+/**
+ * Catalog UI only. Filter/search state lives here (remember / rememberSaveable).
+ * Domain actions are passed in as callbacks — state hoisting from ViewModel owner.
+ */
 @Composable
 fun CatalogScreen(
     uiState: LibraryUiState,
-    viewModel: LibraryViewModel,
+    onBorrow: (itemId: Int, memberId: Int) -> Unit,
+    onAddItem: (
+        type: String,
+        title: String,
+        year: Int,
+        author: String,
+        pages: Int,
+        issue: Int,
+        durationMinutes: Int
+    ) -> Unit,
+    onLoadArrivals: () -> Unit,
+    onOpenItem: (itemId: Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // rememberSaveable: search text, type filter and the checkbox are stored
-    // in the saved-state Bundle and restored after rotation.
+    // rememberSaveable: survives Activity recreation (rotation).
     var query by rememberSaveable { mutableStateOf("") }
     var selectedType by rememberSaveable { mutableStateOf("All") }
     var onlyAvailable by rememberSaveable { mutableStateOf(false) }
 
-    // remember only: the expanded card is transient UI state.
-    // It is intentionally lost on rotation - compare with the search field.
+    // remember only: intentionally lost on rotation — compare with search field.
     var expandedItemId by remember { mutableStateOf<Int?>(null) }
 
     var borrowTarget by remember { mutableStateOf<LibraryItem?>(null) }
@@ -90,7 +102,7 @@ fun CatalogScreen(
                 Text("Add item")
             }
             OutlinedButton(
-                onClick = { viewModel.loadNewArrivals() },
+                onClick = onLoadArrivals,
                 enabled = !uiState.isLoadingArrivals
             ) {
                 if (uiState.isLoadingArrivals) {
@@ -126,6 +138,7 @@ fun CatalogScreen(
                         onToggleExpanded = {
                             expandedItemId = if (expandedItemId == item.id) null else item.id
                         },
+                        onOpen = { onOpenItem(item.id) },
                         onBorrow = { borrowTarget = item }
                     )
                 }
@@ -139,7 +152,7 @@ fun CatalogScreen(
             members = uiState.members,
             onDismiss = { borrowTarget = null },
             onConfirm = { memberId ->
-                viewModel.borrow(item.id, memberId)
+                onBorrow(item.id, memberId)
                 borrowTarget = null
             }
         )
@@ -149,7 +162,7 @@ fun CatalogScreen(
         AddItemDialog(
             onDismiss = { showAddDialog = false },
             onAdd = { type, title, year, author, pages, issue, duration ->
-                viewModel.addItem(type, title, year, author, pages, issue, duration)
+                onAddItem(type, title, year, author, pages, issue, duration)
                 showAddDialog = false
             }
         )

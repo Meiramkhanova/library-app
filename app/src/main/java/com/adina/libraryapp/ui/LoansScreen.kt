@@ -16,13 +16,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.adina.libraryapp.LibraryUiState
-import com.adina.libraryapp.LibraryViewModel
 import com.adina.libraryapp.ui.components.LoanCard
 
 @Composable
 fun LoansScreen(
     uiState: LibraryUiState,
-    viewModel: LibraryViewModel,
+    onReturn: (itemId: Int, daysKept: Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.padding(16.dp)) {
@@ -71,7 +70,7 @@ fun LoansScreen(
                 items(uiState.loans, key = { it.item.id }) { loan ->
                     LoanCard(
                         loan = loan,
-                        onReturn = { daysKept -> viewModel.returnItem(loan.item.id, daysKept) }
+                        onReturn = { daysKept -> onReturn(loan.item.id, daysKept) }
                     )
                 }
             }

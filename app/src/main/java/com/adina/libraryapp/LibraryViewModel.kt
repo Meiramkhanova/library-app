@@ -89,6 +89,24 @@ class LibraryViewModel : ViewModel() {
         refresh(message = "Added \"${item.title}\"")
     }
 
+    fun addMember(name: String, email: String) {
+        val trimmedName = name.trim()
+        val trimmedEmail = email.trim()
+        if (trimmedName.isEmpty() || trimmedEmail.isEmpty()) {
+            refresh(message = "Name and email are required")
+            return
+        }
+        if (library.allMembers().any { it.email.equals(trimmedEmail, ignoreCase = true) }) {
+            refresh(message = "A member with this email already exists")
+            return
+        }
+        val nextId = (library.allMembers().maxOfOrNull { it.id } ?: 0) + 1
+        library.addMember(Member(nextId, trimmedName, trimmedEmail))
+        refresh(message = "Member \"$trimmedName\" registered")
+    }
+
+    fun itemById(id: Int): LibraryItem? = library.allItems().find { it.id == id }
+
     fun loadNewArrivals() {
         if (_uiState.value.isLoadingArrivals) return
         refresh(loading = true)

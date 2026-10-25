@@ -1,106 +1,133 @@
-# LibraryApp — City Library (Android)
+# LibraryApp — City Library (Midterm)
 
-An Android application for managing a small library: books, magazines and DVDs.
-Users can browse the catalog, search and filter items, borrow and return them
-(late returns are charged a fee), add new items and load new arrivals from a
-simulated server.
+An Android library-management app built with Kotlin and Jetpack Compose.
+Readers can browse the catalog, borrow and return items (late returns add a
+fine), register members and load new arrivals from a simulated server.
 
-This project continues Homework 1: the console application's domain classes
-(`Library`, `Book`, `Magazine`, `Dvd`, `Member`, `Loan`) were reused as-is and
-put behind a Jetpack Compose UI and a `ViewModel`.
+Continues HW1 (domain models + `Library` logic) and HW2 (Compose UI +
+`ViewModel`). Midterm Part 1 adds **Navigation Compose**, a **Members**
+screen and lifecycle-aware state collection.
 
-## Features
+## Purpose
 
-- **Catalog screen** — all items in a `LazyColumn` of Material 3 cards with
-  type icon, details and availability status.
-- **Search** by title, **filter** by type (`FilterChip`) and an
-  "Only available" `Checkbox`.
-- **Borrow** — pick a member in a dialog; the domain rules apply
-  (max 3 items per member, already-borrowed items are rejected).
-- **Return** — enter how many days the item was kept; late returns add a fine
-  (Book $0.50/day, Magazine $0.25/day, DVD $1.00/day).
-- **Add item** — dialog with type-specific fields (author/pages for books,
-  issue for magazines, duration for DVDs).
-- **New arrivals** — loads items with the suspend function
-  `Library.fetchNewArrivals()` (coroutine, simulated 1.5 s server delay).
-- **Loans screen** — active loans, statistics and fines per member.
-- Results of every operation are shown in a Snackbar.
+City Library helps a small library track inventory and loans without a
+spreadsheet: staff see what is available, who has what, and which members
+owe late fees.
+
+## Features (meaningful)
+
+1. **Catalog** — search by title, filter by type, show only available items;
+   add books/magazines/DVDs; open an item detail screen; borrow with member
+   selection (max 3 loans per member).
+2. **Loans** — active loans list, return with “days kept”, automatic late
+   fees by item type, library statistics.
+3. **Members** — register readers, see each member’s active loans and fines.
+4. **New arrivals** — coroutine-powered simulated server fetch
+   (`Library.fetchNewArrivals()`).
+
+## Screens (Navigation Compose)
+
+| Route | Screen | Role |
+|---|---|---|
+| `catalog` | Catalog | Browse / search / filter / add / borrow |
+| `loans` | Loans | Returns, statistics, fines |
+| `members` | Members | Register members, loans & fines per person |
+| `item/{itemId}` | Item detail | Full item info + borrow (nav argument) |
+
+Bottom navigation switches the three main tabs and restores their scroll /
+saved state. Opening an item stacks the detail screen (bottom bar hidden).
+
+## Architecture
+
+```
+UI (Compose screens + reusable components)
+        ↑ callbacks / StateFlow
+LibraryViewModel  ←  StateFlow<LibraryUiState>
+        ↓
+model.Library + Book / Magazine / Dvd / Member / Loan
+```
+
+- **UI** only renders state and fires events (state hoisting via callbacks).
+- **ViewModel** owns `Library`, runs coroutines in `viewModelScope`, exposes
+  an immutable `LibraryUiState` through `StateFlow`.
+- **Domain** stays pure Kotlin from HW1 (no Android dependencies).
+
+State collection uses `collectAsStateWithLifecycle()` so the UI stops
+observing when the Activity is not at least `STARTED`.
+
+### `remember` / `rememberSaveable` / `ViewModel`
+
+| Mechanism | Example in this app | Survives rotation? |
+|---|---|---|
+| `remember` | Expanded “Preview” on a catalog card; dialog open flags | No |
+| `rememberSaveable` | Search text, type filter, “Only available”, days-kept fields | Yes (`Bundle`) |
+| `ViewModel` + `StateFlow` | Catalog, members, loans, fines, added items | Yes (retained) |
 
 ## Tech stack
 
 - Kotlin, Jetpack Compose, Material 3
-- `ViewModel` + `StateFlow` (UI state is an immutable snapshot)
-- kotlinx.coroutines (`viewModelScope`, suspend functions)
-- Gradle 9.6, Android Gradle Plugin 9.4, compileSdk 37, minSdk 26
+- Navigation Compose
+- `ViewModel` + `StateFlow` + `collectAsStateWithLifecycle`
+- kotlinx.coroutines
+- Gradle 9.6 / AGP 9.4 / compileSdk 37 / minSdk 26
 
 ## How to run
 
-Requirements: Android Studio (latest), JDK 17, Android SDK 37.
-
-1. Clone this repository and open the project folder in Android Studio
-   (`File → Open`).
-2. Wait for **Gradle Sync** to finish (dependencies are downloaded on first run).
-3. Create an emulator (`Tools → Device Manager → Create Virtual Device`,
-   e.g. Pixel with API 36/37) or connect a physical Android device with
-   USB debugging enabled.
-4. Select the `app` run configuration and press **Run ▶**.
-
-From the terminal (with the Android SDK installed):
+1. Open this folder in **Android Studio** (`File → Open`).
+2. Wait for **Gradle Sync**.
+3. Start an emulator or connect a phone with USB debugging.
+4. Run the `app` configuration (**Run ▶**).
 
 ```bash
-# Windows
-gradlew.bat assembleDebug        # builds app/build/outputs/apk/debug/app-debug.apk
-gradlew.bat installDebug         # installs on a running emulator / device
+# Windows terminal
+gradlew.bat assembleDebug
+gradlew.bat installDebug
 ```
 
-Note: the build runs the Gradle daemon on JDK 17 (`org.gradle.java.home` in
-`gradle.properties`). If you do not have JDK 17, remove that line and set
-JDK 17 in `Settings → Build, Execution, Deployment → Build Tools → Gradle`.
+If Gradle fails on JDK version, keep JDK 17. This project pins
+`org.gradle.java.home` in `gradle.properties` when a local JDK 17 path is set;
+adjust or remove that line for your machine.
 
-## How state works (rotation experiment)
+## Screenshots
 
-The app demonstrates three kinds of state. Rotate the device
-(or enable "Don't keep activities") to see the difference:
+Catalog:
 
-| Mechanism | Used for | Survives rotation? | Why |
-|---|---|---|---|
-| `remember` | expanded card ("Details") | No | Stored in the composition; the Activity and its composition are destroyed on recreation |
-| `rememberSaveable` | search text, type filter, "Only available" checkbox, selected tab, "Days kept" fields | Yes | Written into the saved-state `Bundle` and restored after recreation |
-| `ViewModel` | catalog, members, loans, fines, added items | Yes | The `ViewModel` is retained across Activity recreation and only cleared when the screen is finished for good |
+![Catalog](screenshots/catalog.png)
 
-Rule of thumb: `remember` — cheap transient UI state; `rememberSaveable` —
-small user input that should also survive process death (anything that fits
-in a `Bundle`); `ViewModel` — screen data and application logic that must not
-be lost and does not belong in a `Bundle`.
+Catalog with search / filter:
+
+![Catalog filter](screenshots/catalogFilter.png)
+
+Loans (return + fines):
+
+![Loans](screenshots/loans.png)
+
+Members (register + loan counts):
+
+![Members](screenshots/members.png)
 
 ## Project structure
 
 ```
 app/src/main/java/com/adina/libraryapp/
-├── MainActivity.kt          # entry point, setContent
-├── LibraryViewModel.kt      # LibraryUiState + all user actions
+├── MainActivity.kt
+├── LibraryViewModel.kt
 ├── model/
-│   ├── Library.kt           # domain logic from HW1 (borrow/return/fines)
-│   └── Models.kt            # Book, Magazine, Dvd, Member, Loan, LibraryResult
+│   ├── Library.kt
+│   └── Models.kt
 └── ui/
-    ├── LibraryApp.kt        # Scaffold, bottom navigation, Snackbar
-    ├── CatalogScreen.kt     # search, filter, catalog list, dialogs
-    ├── LoansScreen.kt       # statistics, fines, returns
-    ├── theme/Theme.kt       # Material 3 color scheme
-    └── components/          # reusable composables:
-        ├── LibraryItemCard.kt   # item card with status chip
-        ├── FilterBar.kt         # search field + chips + checkbox
-        ├── LoanCard.kt          # loan card with return form
-        ├── MemberPicker.kt      # member radio list
-        └── Dialogs.kt           # Borrow and Add-item dialogs
+    ├── LibraryApp.kt          # NavHost + bottom bar + Snackbar
+    ├── CatalogScreen.kt
+    ├── LoansScreen.kt
+    ├── MembersScreen.kt
+    ├── ItemDetailScreen.kt
+    ├── navigation/Routes.kt
+    ├── theme/Theme.kt
+    └── components/
+        ├── LibraryItemCard.kt
+        ├── FilterBar.kt
+        ├── LoanCard.kt
+        ├── MemberCard.kt
+        ├── MemberPicker.kt
+        └── Dialogs.kt
 ```
-
-## Screenshots
-
-Catalog with search and filter:
-
-![Catalog](screenshots/catalog.png)
-
-Borrow flow and loans with fines:
-
-![Loans](screenshots/loans.png)
