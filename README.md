@@ -1,73 +1,84 @@
-# LibraryApp — City Library (Midterm)
+# SpendLog — personal expense & income tracker (Task 3)
 
-An Android library-management app built with Kotlin and Jetpack Compose.
-Readers can browse the catalog, borrow and return items (late returns add a
-fine), register members and load new arrivals from a simulated server.
+An Android finance app built with Kotlin and Jetpack Compose.
+You log what you spent or earned together with a short note about what you did,
+track wallets (Cash / Card / Savings), set monthly category budgets and see
+6-month history.
 
-Continues HW1 (domain models + `Library` logic) and HW2 (Compose UI +
-`ViewModel`). Midterm Part 1 adds **Navigation Compose**, a **Members**
-screen and lifecycle-aware state collection.
+Continues earlier homework ideas (polymorphism, sealed results, rules, async
+load, Navigation + StateFlow) and adds **Room local storage**, full **CRUD**,
+form validation, empty states and an advanced feature: **monthly budgets +
+undo on delete**.
 
 ## Purpose
 
-City Library helps a small library track inventory and loans without a
-spreadsheet: staff see what is available, who has what, and which members
-owe late fees.
+SpendLog helps one person keep a personal money diary without a spreadsheet:
+see total balance, this month’s income vs expenses, which categories are near
+or over budget, and restore a deleted entry with Undo.
 
-## Features (meaningful)
+## Features
 
-1. **Catalog** — search by title, filter by type, show only available items;
-   add books/magazines/DVDs; open an item detail screen; borrow with member
-   selection (max 3 loans per member).
-2. **Loans** — active loans list, return with “days kept”, automatic late
-   fees by item type, library statistics.
-3. **Members** — register readers, see each member’s active loans and fines.
-4. **New arrivals** — coroutine-powered simulated server fetch
-   (`Library.fetchNewArrivals()`).
+1. **Entries** — search by note/category, filter Expense / Income; add, open,
+   edit and delete transactions; LazyColumn with stable keys; Demo month
+   async load.
+2. **Overview** — this month’s summary, last 6 months chart, monthly budgets
+   with progress / near-limit / over-budget, category history screen.
+3. **Accounts** — Cash, Card (with credit limit) and Savings; add / edit /
+   delete (delete blocked if the account still has entries); max 8 accounts.
+4. **Rules kept from earlier work** — Cash and Savings cannot go negative;
+   Card can go down to minus its credit limit; `OperationResult` for success /
+   error / not found.
+5. **Persistence** — Room database; data survives app restart and configuration
+   changes; UI updates automatically via Room `Flow`.
 
 ## Screens (Navigation Compose)
 
 | Route | Screen | Role |
 |---|---|---|
-| `catalog` | Catalog | Browse / search / filter / add / borrow |
-| `loans` | Loans | Returns, statistics, fines |
-| `members` | Members | Register members, loans & fines per person |
-| `item/{itemId}` | Item detail | Full item info + borrow (nav argument) |
+| `transactions` | Entries | List / search / filter / add / demo load |
+| `overview` | Overview | Month stats, 6-month history, budgets CRUD |
+| `accounts` | Accounts | Wallets CRUD |
+| `transaction/{id}` | Entry detail | Full info, edit, delete with confirm |
+| `transaction_form?…` | New / edit entry | Validated form (SavedStateHandle) |
+| `category/{category}` | Category history | This month’s expenses in one category |
 
-Bottom navigation switches the three main tabs and restores their scroll /
-saved state. Opening an item stacks the detail screen (bottom bar hidden).
+Bottom navigation switches the three main tabs and restores scroll / saved
+state. Detail, form and category history hide the bottom bar.
 
 ## Architecture
 
 ```
 UI (Compose screens + reusable components)
-        ↑ callbacks / StateFlow
-LibraryViewModel  ←  StateFlow<LibraryUiState>
+        ↑ collectAsStateWithLifecycle / callbacks
+SpendLogViewModel + TransactionFormViewModel  ←  StateFlow
         ↓
-model.Library + Book / Magazine / Dvd / Member / Loan
+FinanceRepository (OfflineFinanceRepository)
+        ↓
+Room (Account / Transaction / Budget entities + DAOs)
 ```
 
 - **UI** only renders state and fires events (state hoisting via callbacks).
-- **ViewModel** owns `Library`, runs coroutines in `viewModelScope`, exposes
-  an immutable `LibraryUiState` through `StateFlow`.
-- **Domain** stays pure Kotlin from HW1 (no Android dependencies).
+- **ViewModels** talk to the repository; form fields live in `SavedStateHandle`.
+- **Repository** applies money rules and returns `OperationResult`.
+- **Room** is the single source of truth; DAOs expose `Flow`.
 
-State collection uses `collectAsStateWithLifecycle()` so the UI stops
-observing when the Activity is not at least `STARTED`.
+Manual DI: `SpendLogApplication` → `AppContainer` → ViewModel factory.
 
-### `remember` / `rememberSaveable` / `ViewModel`
+### `remember` / `rememberSaveable` / `ViewModel` / Room
 
-| Mechanism | Example in this app | Survives rotation? |
-|---|---|---|
-| `remember` | Expanded “Preview” on a catalog card; dialog open flags | No |
-| `rememberSaveable` | Search text, type filter, “Only available”, days-kept fields | Yes (`Bundle`) |
-| `ViewModel` + `StateFlow` | Catalog, members, loans, fines, added items | Yes (retained) |
+| Mechanism | Example in this app | Survives rotation? | Survives process death? |
+|---|---|---|---|
+| `remember` | Temporary UI flags | No | No |
+| `rememberSaveable` | Search query, kind filter, dialog open | Yes | Yes (`Bundle`) |
+| `ViewModel` + `StateFlow` | Lists, balances, budgets, snackbar | Yes (retained) | Reloaded from Room |
+| Room DB | Accounts, transactions, budgets | Yes | Yes (on disk) |
 
 ## Tech stack
 
 - Kotlin, Jetpack Compose, Material 3
 - Navigation Compose
 - `ViewModel` + `StateFlow` + `collectAsStateWithLifecycle`
+- Room + KSP
 - kotlinx.coroutines
 - Gradle 9.6 / AGP 9.4 / compileSdk 37 / minSdk 26
 
@@ -90,44 +101,61 @@ adjust or remove that line for your machine.
 
 ## Screenshots
 
-Catalog:
+Entries (list, balance, search / filter):
 
-![Catalog](screenshots/catalog.png)
+![Entries](screenshots/spendlog.jpg)
 
-Catalog with search / filter:
+Overview (month summary, 6-month history, budgets):
 
-![Catalog filter](screenshots/catalogFilter.png)
+![Overview](screenshots/overview.jpg)
 
-Loans (return + fines):
+Accounts (Cash / Card / Savings):
 
-![Loans](screenshots/loans.png)
-
-Members (register + loan counts):
-
-![Members](screenshots/members.png)
+![Accounts](screenshots/accounts.jpg)
 
 ## Project structure
 
 ```
-app/src/main/java/com/adina/libraryapp/
+app/src/main/java/com/adina/spendlog/
 ├── MainActivity.kt
-├── LibraryViewModel.kt
+├── SpendLogApplication.kt
+├── data/
+│   ├── AppContainer.kt
+│   ├── Mappers.kt
+│   ├── local/
+│   │   ├── Entities.kt
+│   │   ├── Daos.kt
+│   │   └── SpendLogDatabase.kt
+│   └── repository/
+│       ├── FinanceRepository.kt
+│       └── OfflineFinanceRepository.kt
 ├── model/
-│   ├── Library.kt
-│   └── Models.kt
+│   ├── Models.kt
+│   ├── FinanceRules.kt
+│   └── Validation.kt
 └── ui/
-    ├── LibraryApp.kt          # NavHost + bottom bar + Snackbar
-    ├── CatalogScreen.kt
-    ├── LoansScreen.kt
-    ├── MembersScreen.kt
-    ├── ItemDetailScreen.kt
+    ├── SpendLogApp.kt
+    ├── TransactionsScreen.kt
+    ├── TransactionDetailScreen.kt
+    ├── TransactionFormScreen.kt
+    ├── OverviewScreen.kt
+    ├── CategoryHistoryScreen.kt
+    ├── AccountsScreen.kt
     ├── navigation/Routes.kt
     ├── theme/Theme.kt
+    ├── viewmodel/
+    │   ├── AppViewModelProvider.kt
+    │   ├── SpendLogViewModel.kt
+    │   └── TransactionFormViewModel.kt
     └── components/
-        ├── LibraryItemCard.kt
+        ├── EmptyState.kt
         ├── FilterBar.kt
-        ├── LoanCard.kt
-        ├── MemberCard.kt
-        ├── MemberPicker.kt
+        ├── ChoiceChipRow.kt
+        ├── HeroCard.kt
+        ├── TransactionCard.kt
+        ├── AccountCard.kt
+        ├── AccountPicker.kt
+        ├── BudgetCard.kt
+        ├── MonthHistoryCard.kt
         └── Dialogs.kt
 ```

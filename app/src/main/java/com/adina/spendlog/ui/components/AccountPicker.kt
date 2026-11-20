@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.adina.spendlog.model.AccountBalance
+import com.adina.spendlog.model.formatMoney
 
 @Composable
 fun AccountPicker(
@@ -34,7 +35,7 @@ fun AccountPicker(
                 Column {
                     Text(text = item.account.name, style = MaterialTheme.typography.bodyLarge)
                     Text(
-                        text = "${item.account.type} · balance ${"%.0f".format(item.balance)} ₸",
+                        text = "${item.account.type} · balance ${formatMoney(item.balance)}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

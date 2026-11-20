@@ -1,55 +1,67 @@
 package com.adina.spendlog.ui.components
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.adina.spendlog.model.AccountBalance
 import com.adina.spendlog.model.CardAccount
+import com.adina.spendlog.model.formatMoney
 
 @Composable
 fun AccountCard(
     balance: AccountBalance,
     transactionCount: Int,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val account = balance.account
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = account.name, style = MaterialTheme.typography.titleMedium)
-            Text(
-                text = account.type,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text(text = "Balance: ${"%.0f".format(balance.balance)} ₸")
-                Text(text = "Entries: $transactionCount")
-            }
-            if (account is CardAccount) {
-                Spacer(modifier = Modifier.height(4.dp))
+    SurfaceCard(modifier = modifier) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = account.name, style = MaterialTheme.typography.titleMedium)
                 Text(
-                    text = "Credit limit: ${"%.0f".format(account.creditLimit)} ₸",
+                    text = "${account.type} · $transactionCount entries",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+            IconButton(onClick = onEdit) {
+                Icon(Icons.Filled.Edit, contentDescription = "Edit ${account.name}")
+            }
+            IconButton(onClick = onDelete) {
+                Icon(
+                    Icons.Filled.DeleteOutline,
+                    contentDescription = "Delete ${account.name}",
+                    tint = MaterialTheme.colorScheme.error
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = formatMoney(balance.balance),
+            style = MaterialTheme.typography.headlineSmall,
+            color = if (balance.balance < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+        )
+        if (account is CardAccount) {
+            Text(
+                text = "Can spend up to ${formatMoney(account.maxSpendable(balance.balance))} " +
+                    "(credit limit ${formatMoney(account.creditLimit)})",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

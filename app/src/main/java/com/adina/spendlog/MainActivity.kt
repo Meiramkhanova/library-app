@@ -7,6 +7,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.adina.spendlog.ui.SpendLogApp
 import com.adina.spendlog.ui.theme.SpendLogTheme
+import com.adina.spendlog.ui.viewmodel.AppViewModelProvider
+import com.adina.spendlog.ui.viewmodel.SpendLogViewModel
 
 class MainActivity : ComponentActivity() {
 
@@ -15,7 +17,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             SpendLogTheme {
-                val spendLogViewModel: SpendLogViewModel = viewModel()
+                val spendLogViewModel: SpendLogViewModel = viewModel(factory = AppViewModelProvider.Factory)
                 SpendLogApp(viewModel = spendLogViewModel)
             }
         }

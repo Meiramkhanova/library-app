@@ -1,113 +1,141 @@
 package com.adina.spendlog.ui
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.adina.spendlog.SpendLogUiState
+import com.adina.spendlog.model.AccountDraft
+import com.adina.spendlog.model.FinanceRules
+import com.adina.spendlog.model.formatMoney
 import com.adina.spendlog.ui.components.AccountCard
-import com.adina.spendlog.ui.components.AddAccountDialog
+import com.adina.spendlog.ui.components.AccountFormDialog
+import com.adina.spendlog.ui.components.ConfirmDeleteDialog
+import com.adina.spendlog.ui.components.EmptyState
+import com.adina.spendlog.ui.components.HeroCard
+import com.adina.spendlog.ui.viewmodel.SpendLogUiState
 
 @Composable
 fun AccountsScreen(
     uiState: SpendLogUiState,
-    onAddAccount: (type: String, name: String, startingBalance: Double, creditLimit: Double) -> Unit,
+    onSaveAccount: (AccountDraft) -> Unit,
+    onDeleteAccount: (accountId: Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var showAddDialog by remember { mutableStateOf(false) }
+    var showDialog by rememberSaveable { mutableStateOf(false) }
+    var editingId by rememberSaveable { mutableStateOf<Int?>(null) }
+    var pendingDeleteId by rememberSaveable { mutableStateOf<Int?>(null) }
+
+    if (uiState.isLoading) {
+        LoadingBox(modifier)
+        return
+    }
+
     val counts = uiState.transactions.groupingBy { it.accountId }.eachCount()
+    val canAdd = uiState.balances.size < FinanceRules.MAX_ACCOUNTS
 
-    Column(modifier = modifier.padding(16.dp)) {
-        Text(text = "Accounts", style = MaterialTheme.typography.headlineMedium)
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = "${uiState.balances.size} wallets",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        Button(onClick = { showAddDialog = true }) {
-            Icon(Icons.Filled.AccountBalanceWallet, contentDescription = null)
-            Spacer(modifier = Modifier.width(6.dp))
-            Text("Add account")
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        item(key = "header") {
+            ScreenHeader(title = "Accounts", subtitle = "${uiState.balances.size} of ${FinanceRules.MAX_ACCOUNTS} wallets")
         }
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = MaterialTheme.shapes.large,
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-        ) {
-            Column(modifier = Modifier.padding(20.dp)) {
-                Text(text = "Total balance", style = MaterialTheme.typography.titleMedium)
-                Spacer(modifier = Modifier.height(6.dp))
+        item(key = "hero") {
+            HeroCard {
+                Text("Total balance", style = MaterialTheme.typography.titleMedium)
                 Text(
-                    text = "${"%.0f".format(uiState.balances.sumOf { it.balance })} ₸",
-                    style = MaterialTheme.typography.headlineSmall
+                    formatMoney(uiState.totalBalance),
+                    style = MaterialTheme.typography.headlineMedium.copy(color = MaterialTheme.colorScheme.onPrimary)
                 )
             }
         }
-
-        Spacer(modifier = Modifier.height(14.dp))
+        item(key = "add") {
+            Button(
+                onClick = {
+                    editingId = null
+                    showDialog = true
+                },
+                enabled = canAdd
+            ) {
+                Icon(Icons.Filled.Add, contentDescription = null)
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(if (canAdd) "Add account" else "Account limit reached")
+            }
+        }
 
         if (uiState.balances.isEmpty()) {
-            Text(
-                text = "No accounts yet. Add Cash, Card, or Savings.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            item(key = "empty") {
+                EmptyState(
+                    icon = Icons.Filled.AccountBalanceWallet,
+                    title = "No accounts yet",
+                    message = "Add Cash, a Card or Savings to start logging money."
+                )
+            }
         } else {
-            LazyColumn(
-                contentPadding = PaddingValues(bottom = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier.fillMaxSize()
-            ) {
-                items(uiState.balances, key = { it.account.id }) { balance ->
-                    AccountCard(
-                        balance = balance,
-                        transactionCount = counts[balance.account.id] ?: 0
-                    )
-                }
+            items(uiState.balances, key = { it.account.id }) { balance ->
+                AccountCard(
+                    balance = balance,
+                    transactionCount = counts[balance.account.id] ?: 0,
+                    onEdit = {
+                        editingId = balance.account.id
+                        showDialog = true
+                    },
+                    onDelete = { pendingDeleteId = balance.account.id }
+                )
             }
         }
     }
 
-    if (showAddDialog) {
-        AddAccountDialog(
-            onDismiss = { showAddDialog = false },
-            onConfirm = { type, name, starting, credit ->
-                onAddAccount(type, name, starting, credit)
-                showAddDialog = false
+    if (showDialog) {
+        val editing = editingId?.let { id -> uiState.balances.find { it.account.id == id }?.account }
+        AccountFormDialog(
+            initial = editing,
+            takenNames = uiState.balances.map { it.account }.filter { it.id != editing?.id }.map { it.name },
+            onDismiss = { showDialog = false },
+            onSave = { draft ->
+                onSaveAccount(draft)
+                showDialog = false
             }
         )
+    }
+
+    pendingDeleteId?.let { id ->
+        val account = uiState.balances.find { it.account.id == id }?.account
+        val count = counts[id] ?: 0
+        if (account == null) {
+            pendingDeleteId = null
+        } else {
+            ConfirmDeleteDialog(
+                title = "Delete \"${account.name}\"?",
+                message = if (count > 0) {
+                    "This account has $count entries, so it can't be deleted until you remove or move them."
+                } else {
+                    "This account has no entries and will be removed."
+                },
+                onConfirm = {
+                    onDeleteAccount(id)
+                    pendingDeleteId = null
+                },
+                onDismiss = { pendingDeleteId = null }
+            )
+        }
     }
 }

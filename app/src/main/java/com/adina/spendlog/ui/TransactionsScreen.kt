@@ -1,20 +1,21 @@
 package com.adina.spendlog.ui
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -24,113 +25,132 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.adina.spendlog.SpendLogUiState
-import com.adina.spendlog.ui.components.AddTransactionDialog
+import com.adina.spendlog.model.formatMoney
+import com.adina.spendlog.ui.components.EmptyState
 import com.adina.spendlog.ui.components.FilterBar
+import com.adina.spendlog.ui.components.HeroCard
 import com.adina.spendlog.ui.components.TransactionCard
+import com.adina.spendlog.ui.viewmodel.SpendLogUiState
 
 @Composable
 fun TransactionsScreen(
     uiState: SpendLogUiState,
-    onAddTransaction: (kind: String, accountId: Int, category: String, amount: Double, note: String) -> Unit,
+    onAddTransaction: () -> Unit,
     onLoadDemo: () -> Unit,
     onOpenTransaction: (transactionId: Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var query by rememberSaveable { mutableStateOf("") }
     var selectedKind by rememberSaveable { mutableStateOf("All") }
-    var showAddDialog by remember { mutableStateOf(false) }
 
-    val accountNames = uiState.balances.associate { it.account.id to it.account.name }
+    if (uiState.isLoading) {
+        LoadingBox(modifier)
+        return
+    }
 
     val visible = uiState.transactions.filter { tx ->
         (selectedKind == "All" || tx.kind == selectedKind) &&
-            (tx.note.contains(query, ignoreCase = true) ||
-                tx.category.contains(query, ignoreCase = true))
+            (tx.note.contains(query, ignoreCase = true) || tx.category.contains(query, ignoreCase = true))
     }
 
-    Column(modifier = modifier.padding(16.dp)) {
-        Text(text = "SpendLog", style = MaterialTheme.typography.headlineMedium)
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = "${uiState.transactions.size} entries · net " +
-                "${"%.0f".format(uiState.totalIncome - uiState.totalExpense)} ₸",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        FilterBar(
-            query = query,
-            onQueryChange = { query = it },
-            selectedKind = selectedKind,
-            onKindChange = { selectedKind = it }
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Button(onClick = { showAddDialog = true }) {
-                Icon(Icons.Filled.Add, contentDescription = null)
-                Spacer(modifier = Modifier.width(6.dp))
-                Text("Log entry")
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        item(key = "header") {
+            ScreenHeader(title = "SpendLog", subtitle = "${uiState.transactions.size} entries")
+        }
+        item(key = "hero") {
+            HeroCard {
+                Text("Total balance", style = MaterialTheme.typography.titleMedium)
+                Text(formatMoney(uiState.totalBalance), style = MaterialTheme.typography.headlineMedium.copy(color = MaterialTheme.colorScheme.onPrimary))
+                Spacer(modifier = Modifier.height(6.dp))
+                Text("This month: +${formatMoney(uiState.monthIncome)} · −${formatMoney(uiState.monthExpense)}")
             }
-            OutlinedButton(
-                onClick = onLoadDemo,
-                enabled = !uiState.isLoadingDemo
-            ) {
-                if (uiState.isLoadingDemo) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(18.dp),
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    Icon(Icons.Filled.Download, contentDescription = null)
+        }
+        item(key = "actions") {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Button(onClick = onAddTransaction) {
+                    Icon(Icons.Filled.Add, contentDescription = null)
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Log entry")
                 }
-                Spacer(modifier = Modifier.width(6.dp))
-                Text("Demo month")
+                DemoButton(isLoading = uiState.isLoadingDemo, onClick = onLoadDemo)
             }
         }
 
-        Spacer(modifier = Modifier.height(14.dp))
-
-        if (visible.isEmpty()) {
-            Text(
-                text = "Nothing found. Log what you spent or earned today.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+        if (uiState.transactions.isEmpty()) {
+            item(key = "empty") {
+                EmptyState(
+                    icon = Icons.AutoMirrored.Filled.ReceiptLong,
+                    title = "No entries yet",
+                    message = "Log what you spent or earned today, or load a demo month to try the app."
+                )
+            }
         } else {
-            LazyColumn(
-                contentPadding = PaddingValues(bottom = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier.fillMaxSize()
-            ) {
+            item(key = "filters") {
+                FilterBar(
+                    query = query,
+                    onQueryChange = { query = it },
+                    selectedKind = selectedKind,
+                    onKindChange = { selectedKind = it }
+                )
+            }
+            if (visible.isEmpty()) {
+                item(key = "no_results") {
+                    EmptyState(
+                        icon = Icons.Filled.SearchOff,
+                        title = "Nothing matches",
+                        message = "Try another search or switch the filter back to All."
+                    )
+                }
+            } else {
                 items(visible, key = { it.id }) { tx ->
                     TransactionCard(
                         transaction = tx,
-                        accountName = accountNames[tx.accountId] ?: "Unknown",
+                        accountName = uiState.accountName(tx.accountId),
                         onOpen = { onOpenTransaction(tx.id) }
                     )
                 }
             }
         }
     }
+}
 
-    if (showAddDialog) {
-        AddTransactionDialog(
-            balances = uiState.balances,
-            onDismiss = { showAddDialog = false },
-            onAdd = { kind, accountId, category, amount, note ->
-                onAddTransaction(kind, accountId, category, amount, note)
-                showAddDialog = false
-            }
+@Composable
+private fun DemoButton(isLoading: Boolean, onClick: () -> Unit) {
+    OutlinedButton(onClick = onClick, enabled = !isLoading) {
+        if (isLoading) {
+            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+        } else {
+            Icon(Icons.Filled.Download, contentDescription = null)
+        }
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(if (isLoading) "Loading…" else "Demo month")
+    }
+}
+
+@Composable
+fun ScreenHeader(title: String, subtitle: String, modifier: Modifier = Modifier) {
+    androidx.compose.foundation.layout.Column(modifier = modifier) {
+        Text(text = title, style = MaterialTheme.typography.headlineMedium)
+        Text(
+            text = subtitle,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+    }
+}
+
+@Composable
+fun LoadingBox(modifier: Modifier = Modifier) {
+    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        CircularProgressIndicator()
     }
 }
