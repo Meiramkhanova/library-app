@@ -2,6 +2,7 @@ package com.adina.spendlog.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,28 +36,29 @@ fun OverviewScreen(
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        Card(modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.padding(16.dp)) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.large,
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        ) {
+            Column(modifier = Modifier.padding(20.dp)) {
                 Text(text = "This period", style = MaterialTheme.typography.titleMedium)
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(text = "Income: ${"%.0f".format(uiState.totalIncome)} ₸")
                 Text(text = "Expenses: ${"%.0f".format(uiState.totalExpense)} ₸")
                 Text(
                     text = "Net: ${"%.0f".format(uiState.totalIncome - uiState.totalExpense)} ₸",
-                    color = if (uiState.totalIncome >= uiState.totalExpense) {
-                        MaterialTheme.colorScheme.secondary
-                    } else {
-                        MaterialTheme.colorScheme.error
-                    }
+                    style = MaterialTheme.typography.headlineSmall
                 )
                 Spacer(modifier = Modifier.height(10.dp))
                 Text(text = "Accounts", style = MaterialTheme.typography.titleMedium)
                 Spacer(modifier = Modifier.height(6.dp))
                 if (uiState.balances.isEmpty()) {
-                    Text(
-                        text = "No accounts yet",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Text(text = "No accounts yet")
                 } else {
                     uiState.balances.forEach { item ->
                         Text(
@@ -79,6 +82,7 @@ fun OverviewScreen(
             )
         } else {
             LazyColumn(
+                contentPadding = PaddingValues(bottom = 20.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
                 modifier = Modifier.fillMaxSize()
             ) {

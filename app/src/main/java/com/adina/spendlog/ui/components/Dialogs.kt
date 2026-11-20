@@ -1,5 +1,6 @@
 package com.adina.spendlog.ui.components
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,6 +20,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.adina.spendlog.model.AccountBalance
 import com.adina.spendlog.model.Categories
@@ -45,7 +47,10 @@ fun AddTransactionDialog(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     listOf("Expense", "Income").forEach { option ->
                         FilterChip(
                             selected = kind == option,
@@ -57,7 +62,9 @@ fun AddTransactionDialog(
                                     Categories.expense.first()
                                 }
                             },
-                            label = { Text(option) }
+                            label = {
+                                Text(option, maxLines = 1, softWrap = false, overflow = TextOverflow.Clip)
+                            }
                         )
                     }
                 }
@@ -76,12 +83,17 @@ fun AddTransactionDialog(
                     label = { Text("What did you do?") },
                     singleLine = true
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     categoryOptions.forEach { option ->
                         FilterChip(
                             selected = category == option,
                             onClick = { category = option },
-                            label = { Text(option) }
+                            label = {
+                                Text(option, maxLines = 1, softWrap = false, overflow = TextOverflow.Clip)
+                            }
                         )
                     }
                 }
@@ -126,12 +138,17 @@ fun AddAccountDialog(
         title = { Text("Add account") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     listOf("Cash", "Card", "Savings").forEach { option ->
                         FilterChip(
                             selected = type == option,
                             onClick = { type = option },
-                            label = { Text(option) }
+                            label = {
+                                Text(option, maxLines = 1, softWrap = false, overflow = TextOverflow.Clip)
+                            }
                         )
                     }
                 }
