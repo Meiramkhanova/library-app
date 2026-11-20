@@ -44,15 +44,12 @@ fun TransactionsScreen(
 ) {
     var query by rememberSaveable { mutableStateOf("") }
     var selectedKind by rememberSaveable { mutableStateOf("All") }
-    var onlyExpenses by rememberSaveable { mutableStateOf(false) }
-    var expandedId by remember { mutableStateOf<Int?>(null) }
     var showAddDialog by remember { mutableStateOf(false) }
 
     val accountNames = uiState.balances.associate { it.account.id to it.account.name }
 
     val visible = uiState.transactions.filter { tx ->
         (selectedKind == "All" || tx.kind == selectedKind) &&
-            (!onlyExpenses || tx.kind == "Expense") &&
             (tx.note.contains(query, ignoreCase = true) ||
                 tx.category.contains(query, ignoreCase = true))
     }
@@ -73,9 +70,7 @@ fun TransactionsScreen(
             query = query,
             onQueryChange = { query = it },
             selectedKind = selectedKind,
-            onKindChange = { selectedKind = it },
-            onlyExpenses = onlyExpenses,
-            onOnlyExpensesChange = { onlyExpenses = it }
+            onKindChange = { selectedKind = it }
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -121,10 +116,6 @@ fun TransactionsScreen(
                     TransactionCard(
                         transaction = tx,
                         accountName = accountNames[tx.accountId] ?: "Unknown",
-                        expanded = expandedId == tx.id,
-                        onToggleExpanded = {
-                            expandedId = if (expandedId == tx.id) null else tx.id
-                        },
                         onOpen = { onOpenTransaction(tx.id) }
                     )
                 }

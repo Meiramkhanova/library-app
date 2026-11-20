@@ -54,18 +54,6 @@ fun OverviewScreen(
                     text = "Net: ${"%.0f".format(uiState.totalIncome - uiState.totalExpense)} ₸",
                     style = MaterialTheme.typography.headlineSmall
                 )
-                Spacer(modifier = Modifier.height(10.dp))
-                Text(text = "Accounts", style = MaterialTheme.typography.titleMedium)
-                Spacer(modifier = Modifier.height(6.dp))
-                if (uiState.balances.isEmpty()) {
-                    Text(text = "No accounts yet")
-                } else {
-                    uiState.balances.forEach { item ->
-                        Text(
-                            text = "${item.account.name} — ${"%.0f".format(item.balance)} ₸"
-                        )
-                    }
-                }
             }
         }
 

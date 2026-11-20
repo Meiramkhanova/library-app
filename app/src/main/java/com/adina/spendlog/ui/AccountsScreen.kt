@@ -27,7 +27,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.adina.spendlog.SpendLogUiState
-import com.adina.spendlog.model.Finance
 import com.adina.spendlog.ui.components.AccountCard
 import com.adina.spendlog.ui.components.AddAccountDialog
 
@@ -44,8 +43,7 @@ fun AccountsScreen(
         Text(text = "Accounts", style = MaterialTheme.typography.headlineMedium)
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = "${uiState.balances.size} wallets · max ${Finance.MAX_ACCOUNTS} " +
-                "(Cash/Savings cannot go negative)",
+            text = "${uiState.balances.size} wallets",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
