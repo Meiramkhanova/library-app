@@ -101,11 +101,27 @@ adjust or remove that line for your machine.
 
 ## Screenshots
 
+### Additional feature — monthly budgets
+
+Overview with over-budget alert (Food over limit, 6-month history, badge on tab):
+
+![Over budget](screenshots/overviewOverConsumption.jpeg)
+
+Category history (month spend vs budget + entries for Transport):
+
+![Category history](screenshots/categoryHistory.jpeg)
+
+Entry details with linked category budget:
+
+![Entry details](screenshots/entryDetails.jpeg)
+
+### Main screens
+
 Entries (list, balance, search / filter):
 
 ![Entries](screenshots/spendlog.jpg)
 
-Overview (month summary, 6-month history, budgets):
+Overview (month summary, budgets on track):
 
 ![Overview](screenshots/overview.jpg)
 
