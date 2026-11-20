@@ -1,4 +1,4 @@
-package com.adina.libraryapp.ui
+package com.adina.spendlog.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -28,50 +28,40 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.adina.libraryapp.LibraryUiState
-import com.adina.libraryapp.model.LibraryItem
-import com.adina.libraryapp.ui.components.AddItemDialog
-import com.adina.libraryapp.ui.components.BorrowDialog
-import com.adina.libraryapp.ui.components.FilterBar
-import com.adina.libraryapp.ui.components.LibraryItemCard
+import com.adina.spendlog.SpendLogUiState
+import com.adina.spendlog.ui.components.AddTransactionDialog
+import com.adina.spendlog.ui.components.FilterBar
+import com.adina.spendlog.ui.components.TransactionCard
 
 @Composable
-fun CatalogScreen(
-    uiState: LibraryUiState,
-    onBorrow: (itemId: Int, memberId: Int) -> Unit,
-    onAddItem: (
-        type: String,
-        title: String,
-        year: Int,
-        author: String,
-        pages: Int,
-        issue: Int,
-        durationMinutes: Int
-    ) -> Unit,
-    onLoadArrivals: () -> Unit,
-    onOpenItem: (itemId: Int) -> Unit,
+fun TransactionsScreen(
+    uiState: SpendLogUiState,
+    onAddTransaction: (kind: String, accountId: Int, category: String, amount: Double, note: String) -> Unit,
+    onLoadDemo: () -> Unit,
+    onOpenTransaction: (transactionId: Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var query by rememberSaveable { mutableStateOf("") }
-    var selectedType by rememberSaveable { mutableStateOf("All") }
-    var onlyAvailable by rememberSaveable { mutableStateOf(false) }
-
-    var expandedItemId by remember { mutableStateOf<Int?>(null) }
-
-    var borrowTarget by remember { mutableStateOf<LibraryItem?>(null) }
+    var selectedKind by rememberSaveable { mutableStateOf("All") }
+    var onlyExpenses by rememberSaveable { mutableStateOf(false) }
+    var expandedId by remember { mutableStateOf<Int?>(null) }
     var showAddDialog by remember { mutableStateOf(false) }
 
-    val visibleItems = uiState.items.filter { item ->
-        (selectedType == "All" || item.type == selectedType) &&
-            (!onlyAvailable || item.isAvailable) &&
-            item.title.contains(query, ignoreCase = true)
+    val accountNames = uiState.balances.associate { it.account.id to it.account.name }
+
+    val visible = uiState.transactions.filter { tx ->
+        (selectedKind == "All" || tx.kind == selectedKind) &&
+            (!onlyExpenses || tx.kind == "Expense") &&
+            (tx.note.contains(query, ignoreCase = true) ||
+                tx.category.contains(query, ignoreCase = true))
     }
 
     Column(modifier = modifier.padding(16.dp)) {
-        Text(text = "City Library", style = MaterialTheme.typography.headlineMedium)
+        Text(text = "SpendLog", style = MaterialTheme.typography.headlineMedium)
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = "${uiState.items.count { it.isAvailable }} of ${uiState.items.size} items available",
+            text = "${uiState.transactions.size} entries · net " +
+                "${"%.0f".format(uiState.totalIncome - uiState.totalExpense)} ₸",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -81,10 +71,10 @@ fun CatalogScreen(
         FilterBar(
             query = query,
             onQueryChange = { query = it },
-            selectedType = selectedType,
-            onTypeChange = { selectedType = it },
-            onlyAvailable = onlyAvailable,
-            onOnlyAvailableChange = { onlyAvailable = it }
+            selectedKind = selectedKind,
+            onKindChange = { selectedKind = it },
+            onlyExpenses = onlyExpenses,
+            onOnlyExpensesChange = { onlyExpenses = it }
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -93,13 +83,13 @@ fun CatalogScreen(
             Button(onClick = { showAddDialog = true }) {
                 Icon(Icons.Filled.Add, contentDescription = null)
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("Add item")
+                Text("Log entry")
             }
             OutlinedButton(
-                onClick = onLoadArrivals,
-                enabled = !uiState.isLoadingArrivals
+                onClick = onLoadDemo,
+                enabled = !uiState.isLoadingDemo
             ) {
-                if (uiState.isLoadingArrivals) {
+                if (uiState.isLoadingDemo) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(18.dp),
                         strokeWidth = 2.dp
@@ -108,15 +98,15 @@ fun CatalogScreen(
                     Icon(Icons.Filled.Download, contentDescription = null)
                 }
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("New arrivals")
+                Text("Demo month")
             }
         }
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        if (visibleItems.isEmpty()) {
+        if (visible.isEmpty()) {
             Text(
-                text = "Nothing found. Try another search or add a new item.",
+                text = "Nothing found. Log what you spent or earned today.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -125,38 +115,27 @@ fun CatalogScreen(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
                 modifier = Modifier.fillMaxSize()
             ) {
-                items(visibleItems, key = { it.id }) { item ->
-                    LibraryItemCard(
-                        item = item,
-                        expanded = expandedItemId == item.id,
+                items(visible, key = { it.id }) { tx ->
+                    TransactionCard(
+                        transaction = tx,
+                        accountName = accountNames[tx.accountId] ?: "Unknown",
+                        expanded = expandedId == tx.id,
                         onToggleExpanded = {
-                            expandedItemId = if (expandedItemId == item.id) null else item.id
+                            expandedId = if (expandedId == tx.id) null else tx.id
                         },
-                        onOpen = { onOpenItem(item.id) },
-                        onBorrow = { borrowTarget = item }
+                        onOpen = { onOpenTransaction(tx.id) }
                     )
                 }
             }
         }
     }
 
-    borrowTarget?.let { item ->
-        BorrowDialog(
-            item = item,
-            members = uiState.members,
-            onDismiss = { borrowTarget = null },
-            onConfirm = { memberId ->
-                onBorrow(item.id, memberId)
-                borrowTarget = null
-            }
-        )
-    }
-
     if (showAddDialog) {
-        AddItemDialog(
+        AddTransactionDialog(
+            balances = uiState.balances,
             onDismiss = { showAddDialog = false },
-            onAdd = { type, title, year, author, pages, issue, duration ->
-                onAddItem(type, title, year, author, pages, issue, duration)
+            onAdd = { kind, accountId, category, amount, note ->
+                onAddTransaction(kind, accountId, category, amount, note)
                 showAddDialog = false
             }
         )

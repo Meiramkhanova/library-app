@@ -1,10 +1,10 @@
-package com.adina.libraryapp.ui
+package com.adina.spendlog.ui
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.MenuBook
-import androidx.compose.material.icons.filled.People
-import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material.icons.automirrored.filled.ListAlt
+import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
@@ -27,11 +27,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.adina.libraryapp.LibraryViewModel
-import com.adina.libraryapp.ui.navigation.Routes
+import com.adina.spendlog.SpendLogViewModel
+import com.adina.spendlog.ui.navigation.Routes
 
 @Composable
-fun LibraryApp(viewModel: LibraryViewModel) {
+fun SpendLogApp(viewModel: SpendLogViewModel) {
     val navController = rememberNavController()
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -53,9 +53,9 @@ fun LibraryApp(viewModel: LibraryViewModel) {
             if (showBottomBar) {
                 NavigationBar {
                     NavigationBarItem(
-                        selected = currentRoute == Routes.Catalog,
+                        selected = currentRoute == Routes.Transactions,
                         onClick = {
-                            navController.navigate(Routes.Catalog) {
+                            navController.navigate(Routes.Transactions) {
                                 popUpTo(navController.graph.findStartDestination().id) {
                                     saveState = true
                                 }
@@ -63,13 +63,15 @@ fun LibraryApp(viewModel: LibraryViewModel) {
                                 restoreState = true
                             }
                         },
-                        icon = { Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = null) },
-                        label = { Text("Catalog") }
+                        icon = {
+                            Icon(Icons.AutoMirrored.Filled.ListAlt, contentDescription = null)
+                        },
+                        label = { Text("Entries") }
                     )
                     NavigationBarItem(
-                        selected = currentRoute == Routes.Loans,
+                        selected = currentRoute == Routes.Overview,
                         onClick = {
-                            navController.navigate(Routes.Loans) {
+                            navController.navigate(Routes.Overview) {
                                 popUpTo(navController.graph.findStartDestination().id) {
                                     saveState = true
                                 }
@@ -80,20 +82,21 @@ fun LibraryApp(viewModel: LibraryViewModel) {
                         icon = {
                             BadgedBox(
                                 badge = {
-                                    if (uiState.loans.isNotEmpty()) {
-                                        Badge { Text(uiState.loans.size.toString()) }
+                                    val over = uiState.categorySpend.count { it.isOverBudget }
+                                    if (over > 0) {
+                                        Badge { Text(over.toString()) }
                                     }
                                 }
                             ) {
-                                Icon(Icons.Filled.Receipt, contentDescription = null)
+                                Icon(Icons.Filled.Insights, contentDescription = null)
                             }
                         },
-                        label = { Text("Loans") }
+                        label = { Text("Overview") }
                     )
                     NavigationBarItem(
-                        selected = currentRoute == Routes.Members,
+                        selected = currentRoute == Routes.Accounts,
                         onClick = {
-                            navController.navigate(Routes.Members) {
+                            navController.navigate(Routes.Accounts) {
                                 popUpTo(navController.graph.findStartDestination().id) {
                                     saveState = true
                                 }
@@ -101,8 +104,10 @@ fun LibraryApp(viewModel: LibraryViewModel) {
                                 restoreState = true
                             }
                         },
-                        icon = { Icon(Icons.Filled.People, contentDescription = null) },
-                        label = { Text("Members") }
+                        icon = {
+                            Icon(Icons.Filled.AccountBalanceWallet, contentDescription = null)
+                        },
+                        label = { Text("Accounts") }
                     )
                 }
             }
@@ -110,42 +115,38 @@ fun LibraryApp(viewModel: LibraryViewModel) {
     ) { paddingValues ->
         NavHost(
             navController = navController,
-            startDestination = Routes.Catalog,
+            startDestination = Routes.Transactions,
             modifier = Modifier.padding(paddingValues)
         ) {
-            composable(Routes.Catalog) {
-                CatalogScreen(
+            composable(Routes.Transactions) {
+                TransactionsScreen(
                     uiState = uiState,
-                    onBorrow = viewModel::borrow,
-                    onAddItem = viewModel::addItem,
-                    onLoadArrivals = viewModel::loadNewArrivals,
-                    onOpenItem = { itemId ->
-                        navController.navigate(Routes.itemDetail(itemId))
+                    onAddTransaction = viewModel::addTransaction,
+                    onLoadDemo = viewModel::loadDemoMonth,
+                    onOpenTransaction = { id ->
+                        navController.navigate(Routes.transactionDetail(id))
                     }
                 )
             }
-            composable(Routes.Loans) {
-                LoansScreen(
-                    uiState = uiState,
-                    onReturn = viewModel::returnItem
-                )
+            composable(Routes.Overview) {
+                OverviewScreen(uiState = uiState)
             }
-            composable(Routes.Members) {
-                MembersScreen(
+            composable(Routes.Accounts) {
+                AccountsScreen(
                     uiState = uiState,
-                    onAddMember = viewModel::addMember
+                    onAddAccount = viewModel::addAccount
                 )
             }
             composable(
-                route = Routes.ItemDetail,
-                arguments = listOf(navArgument("itemId") { type = NavType.IntType })
+                route = Routes.TransactionDetail,
+                arguments = listOf(navArgument("transactionId") { type = NavType.IntType })
             ) { backStackEntry ->
-                val itemId = backStackEntry.arguments?.getInt("itemId") ?: return@composable
-                ItemDetailScreen(
-                    itemId = itemId,
+                val transactionId = backStackEntry.arguments?.getInt("transactionId")
+                    ?: return@composable
+                TransactionDetailScreen(
+                    transactionId = transactionId,
                     uiState = uiState,
-                    onBack = { navController.popBackStack() },
-                    onBorrow = viewModel::borrow
+                    onBack = { navController.popBackStack() }
                 )
             }
         }

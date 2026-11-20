@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "LibraryApp"
+rootProject.name = "SpendLog"
 include(":app")

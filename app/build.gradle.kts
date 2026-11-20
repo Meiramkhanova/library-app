@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.adina.libraryapp"
+    namespace = "com.adina.spendlog"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.adina.libraryapp"
+        applicationId = "com.adina.spendlog"
         minSdk = 26
         targetSdk = 37
         versionCode = 1
@@ -23,6 +23,9 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+    kotlin {
+        jvmToolchain(17)
     }
 }
 

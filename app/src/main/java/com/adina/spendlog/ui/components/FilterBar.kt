@@ -1,4 +1,4 @@
-package com.adina.libraryapp.ui.components
+package com.adina.spendlog.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -19,23 +19,23 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
-private val TypeFilters = listOf("All", "Book", "Magazine", "DVD")
+private val KindFilters = listOf("All", "Expense", "Income")
 
 @Composable
 fun FilterBar(
     query: String,
     onQueryChange: (String) -> Unit,
-    selectedType: String,
-    onTypeChange: (String) -> Unit,
-    onlyAvailable: Boolean,
-    onOnlyAvailableChange: (Boolean) -> Unit,
+    selectedKind: String,
+    onKindChange: (String) -> Unit,
+    onlyExpenses: Boolean,
+    onOnlyExpensesChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
         OutlinedTextField(
             value = query,
             onValueChange = onQueryChange,
-            label = { Text("Search by title") },
+            label = { Text("Search by note") },
             leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
@@ -44,19 +44,19 @@ fun FilterBar(
         Spacer(modifier = Modifier.height(10.dp))
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TypeFilters.forEach { type ->
+            KindFilters.forEach { kind ->
                 FilterChip(
-                    selected = selectedType == type,
-                    onClick = { onTypeChange(type) },
-                    label = { Text(type) }
+                    selected = selectedKind == kind,
+                    onClick = { onKindChange(kind) },
+                    label = { Text(kind) }
                 )
             }
         }
 
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Checkbox(checked = onlyAvailable, onCheckedChange = onOnlyAvailableChange)
+            Checkbox(checked = onlyExpenses, onCheckedChange = onOnlyExpensesChange)
             Spacer(modifier = Modifier.width(4.dp))
-            Text("Only available")
+            Text("Only expenses")
         }
     }
 }

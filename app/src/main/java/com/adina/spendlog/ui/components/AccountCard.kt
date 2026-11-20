@@ -1,4 +1,4 @@
-package com.adina.libraryapp.ui.components
+package com.adina.spendlog.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -13,43 +13,43 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.adina.libraryapp.model.Member
+import com.adina.spendlog.model.AccountBalance
+import com.adina.spendlog.model.CardAccount
 
 @Composable
-fun MemberCard(
-    member: Member,
-    activeLoans: Int,
-    fine: Double,
-    borrowedTitles: List<String>,
+fun AccountCard(
+    balance: AccountBalance,
+    transactionCount: Int,
     modifier: Modifier = Modifier
 ) {
+    val account = balance.account
     Card(modifier = modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(14.dp)) {
-            Text(text = member.name, style = MaterialTheme.typography.titleMedium)
+            Text(text = account.name, style = MaterialTheme.typography.titleMedium)
             Text(
-                text = member.email,
+                text = account.type,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text(text = "Loans: $activeLoans / 3")
+                Text(text = "Balance: ${"%.0f".format(balance.balance)} ₸")
+                Text(text = "Entries: $transactionCount")
+            }
+            if (account is CardAccount) {
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = if (fine > 0) "Fine: $${"%.2f".format(fine)}" else "No fine",
-                    color = if (fine > 0) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    }
+                    text = "Credit limit: ${"%.0f".format(account.creditLimit)} ₸",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            if (borrowedTitles.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = "Holding: ${borrowedTitles.joinToString()}",
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = account.describe(),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

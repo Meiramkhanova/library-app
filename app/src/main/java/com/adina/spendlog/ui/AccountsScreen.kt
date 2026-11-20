@@ -1,4 +1,4 @@
-package com.adina.libraryapp.ui
+package com.adina.spendlog.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
@@ -24,23 +24,26 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.adina.libraryapp.LibraryUiState
-import com.adina.libraryapp.ui.components.AddMemberDialog
-import com.adina.libraryapp.ui.components.MemberCard
+import com.adina.spendlog.SpendLogUiState
+import com.adina.spendlog.model.Finance
+import com.adina.spendlog.ui.components.AccountCard
+import com.adina.spendlog.ui.components.AddAccountDialog
 
 @Composable
-fun MembersScreen(
-    uiState: LibraryUiState,
-    onAddMember: (name: String, email: String) -> Unit,
+fun AccountsScreen(
+    uiState: SpendLogUiState,
+    onAddAccount: (type: String, name: String, startingBalance: Double, creditLimit: Double) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var showAddDialog by remember { mutableStateOf(false) }
+    val counts = uiState.transactions.groupingBy { it.accountId }.eachCount()
 
     Column(modifier = modifier.padding(16.dp)) {
-        Text(text = "Members", style = MaterialTheme.typography.headlineMedium)
+        Text(text = "Accounts", style = MaterialTheme.typography.headlineMedium)
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = "${uiState.members.size} registered readers · max 3 loans each",
+            text = "${uiState.balances.size} wallets · max ${Finance.MAX_ACCOUNTS} " +
+                "(Cash/Savings cannot go negative)",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -48,54 +51,52 @@ fun MembersScreen(
         Spacer(modifier = Modifier.height(14.dp))
 
         Button(onClick = { showAddDialog = true }) {
-            Icon(Icons.Filled.PersonAdd, contentDescription = null)
+            Icon(Icons.Filled.AccountBalanceWallet, contentDescription = null)
             Spacer(modifier = Modifier.width(6.dp))
-            Text("Register member")
+            Text("Add account")
         }
 
         Spacer(modifier = Modifier.height(14.dp))
 
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(14.dp)) {
-                Text(text = "Fines summary", style = MaterialTheme.typography.titleMedium)
+                Text(text = "Total balance", style = MaterialTheme.typography.titleMedium)
                 Spacer(modifier = Modifier.height(6.dp))
-                if (uiState.finesByMember.isEmpty()) {
-                    Text(
-                        text = "No outstanding fines",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                } else {
-                    uiState.finesByMember.forEach { (name, amount) ->
-                        Text(text = "$name — $${"%.2f".format(amount)}")
-                    }
-                }
+                Text(
+                    text = "${"%.0f".format(uiState.balances.sumOf { it.balance })} ₸",
+                    style = MaterialTheme.typography.headlineSmall
+                )
             }
         }
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-            modifier = Modifier.fillMaxSize()
-        ) {
-            items(uiState.members, key = { it.id }) { member ->
-                MemberCard(
-                    member = member,
-                    activeLoans = uiState.loans.count { it.member.id == member.id },
-                    fine = uiState.finesByMember[member.name] ?: 0.0,
-                    borrowedTitles = uiState.loans
-                        .filter { it.member.id == member.id }
-                        .map { it.item.title }
-                )
+        if (uiState.balances.isEmpty()) {
+            Text(
+                text = "No accounts yet. Add Cash, Card, or Savings.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        } else {
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                items(uiState.balances, key = { it.account.id }) { balance ->
+                    AccountCard(
+                        balance = balance,
+                        transactionCount = counts[balance.account.id] ?: 0
+                    )
+                }
             }
         }
     }
 
     if (showAddDialog) {
-        AddMemberDialog(
+        AddAccountDialog(
             onDismiss = { showAddDialog = false },
-            onConfirm = { name, email ->
-                onAddMember(name, email)
+            onConfirm = { type, name, starting, credit ->
+                onAddAccount(type, name, starting, credit)
                 showAddDialog = false
             }
         )
